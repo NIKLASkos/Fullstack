@@ -28,12 +28,13 @@ const App = () => {
         setPersons(initialPeople)
       })
     }, [])
-  console.log('rendered', persons.length, 'people')
+  
     
-  const filteredNames = persons.filter( nimi => 
+  const filteredNames = persons.length > 0 ?  
+  persons.filter( nimi => 
     nimi.name.toUpperCase().includes(
       newFilter.toUpperCase()
-  ))
+  )) : persons
 
   const addNameAndNumber = (event) => {
     event.preventDefault()
@@ -47,13 +48,14 @@ const App = () => {
     if (numerotListassa.includes(newNumber)) {
       alert(`Sorry, this number is already on the list`)
     } else if (nimetListassa.includes(newName)){
-      const nameToChange = newName
+      const nameToChange = nimiLuetteloon.name
       const personToChange = persons.find(person => person.name === nameToChange)
       const id = personToChange.id
       const changedPerson = {...personToChange, number:newNumber}
 
       personService.update(id, changedPerson)
         .then(response => {
+          console.log('response data updatessa', response.data)
           setPersons(persons.map(person => person.id !== id ? person : response.data))
           setSuccess(
             `${newName} was updated successfully`
@@ -62,23 +64,37 @@ const App = () => {
             setSuccess('')
           }, 3000)
         })
-          .catch(error => {
-            setFailure(
-              `Information of ${nameToChange} has already been deleted from the server. `
-            )
-          }, 3000)
-        
+        .catch(error => {
+          setFailure(
+            error.response.data.error
+          )
+          setTimeout(() => {
+            setFailure('')
+          }, 6000)
+        })
     }else {
-    personService.create(nimiLuetteloon)
-    .then( newName => 
-    setPersons(persons.concat(newName))
-    )
-    setSuccess(
-      `${newName} was added successfully`
-    )
-    setTimeout(() => {
-      setSuccess('')
-    }, 3000)
+      personService.create(nimiLuetteloon)
+      .then( response => {
+        console.log('create onnistunut', nimiLuetteloon)
+      setPersons(persons.concat(nimiLuetteloon))
+      setSuccess(
+        `${nimiLuetteloon.name} was added successfully`
+      )
+      setTimeout(() => {
+        setSuccess('')
+      }, 3000)
+      })
+      .catch( error => {
+        console.log(error.response.data.error)
+        console.log('error', error)
+        console.log('error res', error.response)
+        setFailure(
+          error.response.data.error
+        )
+        setTimeout(() => {
+          setFailure('')
+        }, 6000)
+      })
     }
     setNewName('')
     setNewNumber('')
@@ -95,7 +111,10 @@ const App = () => {
       setFailure(
         `Information of ${personToDelete} has already been deleted from the server.`
       )
-    })
+      setTimeout(() => {
+        setFailure('')
+      }, 3000)}
+    )
     setSuccess(
       `${personToDelete} was deleted successfully`
     )
